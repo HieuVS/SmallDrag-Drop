@@ -1,70 +1,69 @@
 "use strict";
-// function Logger(logInfo: string) {
-//     return ((constructor: Function) => {
-//         console.log(logInfo);
-//         console.log(constructor)
-//     })
-// }
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-const registeredValidators = {}; // which validator has been registered
-function Required(target, propName) {
-    registeredValidators[target.constructor.name] = Object.assign(Object.assign({}, registeredValidators[target.constructor.name]), { [propName]: ['required'] });
+function bindHandler(target, methodName, descriptor) {
+    const originalMethod = descriptor.value;
+    // console.log(target)
+    const adjDescriptor = {
+        configurable: true,
+        enumerable: false,
+        get() {
+            const boundFn = originalMethod.bind(this);
+            return boundFn;
+        }
+    };
+    return adjDescriptor;
 }
-function PositiveNumber(target, propName) {
-    console.log("LOL: ", target.constructor.name); //class Course with constructor.name, here is Course
-    console.log(propName); //here is price
-    registeredValidators[target.constructor.name] = Object.assign(Object.assign({}, registeredValidators[target.constructor.name]), { [propName]: ['positive'] });
-    console.log(registeredValidators);
-}
-function validate(obj) {
-    const objValidatorConfig = registeredValidators[obj.constructor.name];
-    if (!objValidatorConfig) {
-        return true;
+class ProjectInput {
+    constructor() {
+        this.templateElement = document.getElementById('project-input');
+        this.hostElement = document.getElementById('app');
+        const importedNode = document.importNode(this.templateElement.content, true);
+        this.element = importedNode.firstElementChild;
+        this.element.id = 'user-input';
+        this.titleInputElement = this.element.querySelector("#title");
+        this.descriptionElement = this.element.querySelector("#description");
+        this.peopleElement = this.element.querySelector("#people");
+        this.configure();
+        this.attach();
     }
-    let isValid = true;
-    for (const prop in objValidatorConfig) {
-        for (const validator of objValidatorConfig[prop]) {
-            switch (validator) {
-                case 'required':
-                    isValid = isValid && !!obj[prop];
-                    break;
-                case 'positive':
-                    isValid = isValid && obj[prop] > 0;
-                    break;
-            }
+    clearInput() {
+        this.titleInputElement.value = '';
+        this.descriptionElement.value = '';
+        this.peopleElement.value = '';
+    }
+    gatherUserInput() {
+        const title = this.titleInputElement.value;
+        const description = this.descriptionElement.value;
+        const people = this.peopleElement.value;
+        if (title.trim().length === 0 || description.trim().length === 0 || people.trim().length === 0) {
+            alert('Invalid input, pls try again');
+        }
+        else {
+            return [title, description, +people];
         }
     }
-    return isValid;
-}
-class Course {
-    constructor(t, p) {
-        this.title = t;
-        this.price = p;
+    submitHandler(event) {
+        event.preventDefault();
+        const userInput = this.gatherUserInput();
+        if (Array.isArray(userInput)) {
+            const [title, desc, people] = userInput;
+            this.clearInput();
+        }
+    }
+    configure() {
+        this.element.addEventListener('submit', this.submitHandler);
+    }
+    attach() {
+        this.hostElement.insertAdjacentElement('afterbegin', this.element);
     }
 }
 __decorate([
-    Required
-], Course.prototype, "title", void 0);
-__decorate([
-    PositiveNumber
-], Course.prototype, "price", void 0);
-const courseForm = document.querySelector('form');
-courseForm.addEventListener('submit', event => {
-    event.preventDefault();
-    const titleEl = document.getElementById('title');
-    const priceEl = document.getElementById('price');
-    const title = titleEl.value;
-    const price = +priceEl.value;
-    const createdCourse = new Course(title, price);
-    if (!validate(createdCourse)) {
-        alert('Invalid input, please try again!');
-        return;
-    }
-    console.log(createdCourse);
-});
+    bindHandler
+], ProjectInput.prototype, "submitHandler", null);
+const projectInput = new ProjectInput();
 //# sourceMappingURL=app.js.map
